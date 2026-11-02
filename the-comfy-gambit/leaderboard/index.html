@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Match Leaderboard | The Comfy Gambit | Shiro Games</title>
+<meta name="description" content="Preview Daily Match move-score rankings in The Comfy Gambit. Your chess game still works without an internet connection.">
+<link rel="icon" href="/assets/fox.webp" type="image/webp"><link rel="stylesheet" href="/style.css?v=fox2">
+<style>
+.leaders{max-width:880px;margin:4rem auto 6rem}.leaders h1{font-family:Georgia,serif;font-size:clamp(2.3rem,6vw,4.2rem);line-height:1.08}.leaders .intro{max-width:650px;font-size:1.08rem}
+.board-card{border:1px solid #bba18e;border-radius:20px;background:#fdf5e7;color:#342429;padding:clamp(18px,4vw,36px);box-shadow:0 14px 50px #33201c18;margin-top:2rem}
+.preview-label{display:inline-flex;padding:.4rem .75rem;border:1px solid #9b7664;border-radius:30px;font-size:.77rem;letter-spacing:.08em;text-transform:uppercase}
+.leaders-controls{display:flex;gap:.7rem;flex-wrap:wrap;margin:1.35rem 0}.leaders-controls button{font:inherit;cursor:pointer;border:1px solid #8e6b5d;background:transparent;border-radius:9px;padding:.65rem 1rem;color:#342429}.leaders-controls button[aria-pressed=true]{background:#473039;color:white}
+.leader-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.leader-table th,.leader-table td{text-align:left;padding:14px 8px;border-bottom:1px solid #cdb6a4}.leader-table th{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#664c47}.leader-table th:last-child,.leader-table td:last-child{text-align:right}.leader-table td:nth-child(3){text-transform:capitalize}
+.leader-note{font-size:.9rem;line-height:1.7;color:#58443c;margin-top:1.5rem}.leader-status{min-height:2.5em;margin-top:1rem;color:#58443c}
+@media(max-width:520px){.leader-table th,.leader-table td{padding:12px 5px;font-size:.88rem}.leader-table th:nth-child(3),.leader-table td:nth-child(3){display:none}}
+</style></head>
+<body class="comfy game"><a class="skip" href="#main">Skip to content</a>
+<header class="top"><div class="wrap"><a class="brand" href="/"><img class="brand-fox" src="/assets/shiro-fox.svg" alt=""><img class="brand-type" src="/assets/shiro-type.svg" alt="Shiro Games"></a><nav aria-label="Main"><a href="/the-comfy-gambit/">The game</a><a href="/support.html">Support</a><a href="/privacy.html">Privacy</a></nav></div></header>
+<main id="main"><div class="wrap"><section class="leaders" aria-labelledby="board-title">
+<p class="kicker">The Comfy Gambit / Daily Match</p><h1 id="board-title">Daily Match Leaders</h1>
+<p class="intro">Make thoughtful moves, collect points, and see the community's top Daily Match scores. <strong>Master move +100</strong> · <strong>Correct move +25</strong>. Even a loss earns the points you played for.</p>
+<div class="board-card"><span class="preview-label">Community preview · Unverified scores</span>
+<div class="leaders-controls" aria-label="Leaderboard period">
+<button type="button" data-day="today" aria-pressed="true">Today's match</button>
+<button type="button" data-day="all" aria-pressed="false">All-time best attempts</button></div>
+<p id="status" class="leader-status" role="status" aria-live="polite">Loading rankings…</p>
+<table class="leader-table"><thead><tr><th scope="col">Rank</th><th scope="col">Player</th><th scope="col">Result</th><th scope="col">Points</th></tr></thead><tbody id="rows"></tbody></table>
+<p class="leader-note">These are <strong>guest preview</strong> rankings, not verified competitive scores. An authenticated, replay-validated leaderboard is planned. Personal scores stay on your device if the API is offline; you can always play the game normally.</p></div>
+<p style="margin-top:2rem"><a href="/the-comfy-gambit/">Back to The Comfy Gambit</a> · <a href="/the-comfy-gambit/privacy.html">Privacy policy</a></p>
+</section></div></main><footer class="foot"><div class="wrap"><small>© 2026 Shiro Games</small><div class="footlinks"><a href="/#games">Games</a><a href="/support.html">Player support</a><a href="/privacy.html">Privacy policies</a></div></div></footer>
+<script>
+(()=>{"use strict";
+const api="https://api.shirogames.site/v1/top",body=document.getElementById("rows"),status=document.getElementById("status"),buttons=[...document.querySelectorAll("[data-day]")];
+let generation=0;
+async function load(day){
+  const current=++generation;
+  body.replaceChildren();status.textContent="Loading rankings…";
+  const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),7000);
+  try{
+    const r=await fetch(api+"?limit=20"+(day==="all"?"&day=all":""),{signal:abort.signal,cache:"no-store"});
+    if(!r.ok)throw Error("network");const data=await r.json();
+    if(!data.ok||data.mode!=="guest-preview"||data.verified!==false||!Array.isArray(data.rows))throw Error("invalid");
+    if(current!==generation)return;
+    if(!data.rows.length){status.textContent="No community scores yet. Be among the first!";return;}
+    status.textContent=day==="all"?"Highest individual Daily Match attempts":"Today's Daily Match · "+(data.day||"");
+    data.rows.forEach((s,i)=>{
+      const tr=document.createElement("tr");
+      const fields=[String(i+1),"Guest "+String(s.guest_id||"").slice(0,8),String(s.outcome||"").slice(0,10),Number(s.score||0).toLocaleString()];
+      fields.forEach(value=>{const td=document.createElement("td");td.textContent=value;tr.append(td);});
+      body.append(tr);
+    });
+  }catch(e){if(current===generation)status.textContent="Leaderboard unavailable right now. The game and your offline scores still work.";}
+  finally{clearTimeout(timeout);}
+}
+buttons.forEach(button=>button.addEventListener("click",()=>{buttons.forEach(b=>b.setAttribute("aria-pressed",String(b===button)));load(button.dataset.day);}));
+load("today");
+})();
+</script></body></html>
